@@ -1,0 +1,451 @@
+<!DOCTYPE html> 
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AIES IMMO Studio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { 
+            --bg-main: #F8FAFC;       /* Чистый корпоративный светлый фон (Slate 50) */
+            --panel-bg: #FFFFFF;      /* Белоснежные панели */
+            --accent-primary: #0F172A;/* Глубокий графитово-черный для главных элементов */
+            --accent-blue: #2563EB;   /* Профессиональный синий для акцентов и кнопок */
+            --text-main: #1E293B;     /* Основной текст (Slate 800) */
+            --text-muted: #64748B;    /* Второстепенный текст (Slate 500) */
+            --border-color: #E2E8F0;  /* Тонкие аккуратные границы (Slate 200) */
+            --input-bg: #F1F5F9;      /* Фон полей ввода */
+        }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--bg-main); 
+            color: var(--text-main); 
+            margin: 0; 
+            padding: 40px 20px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center;
+            -webkit-font-smoothing: antialiased;
+        }
+        
+        .app { width: 100%; max-width: 460px; }
+        
+        header { 
+            display: flex; 
+            flex-direction: column;
+            align-items: flex-start; 
+            margin-bottom: 30px; 
+            padding-left: 4px;
+        }
+        header h1 { 
+            margin: 0; 
+            font-size: 1.5rem; 
+            font-weight: 700; 
+            letter-spacing: -0.03em; 
+            color: var(--accent-primary);
+            text-transform: uppercase;
+        }
+        header h1 span { color: var(--accent-blue); font-weight: 400; }
+        header p { margin: 4px 0 0 0; font-size: 13px; color: var(--text-muted); }
+
+        .card { 
+            background: var(--panel-bg); 
+            padding: 28px; 
+            border-radius: 14px; 
+            border: 1px solid var(--border-color); 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            margin-bottom: 20px; 
+        }
+        
+        label { 
+            font-size: 11px; 
+            font-weight: 600; 
+            text-transform: uppercase; 
+            letter-spacing: 0.05em; 
+            color: var(--text-muted); 
+            display: block; 
+            margin-bottom: 6px; 
+            margin-top: 18px; 
+        }
+        label:first-child { margin-top: 0; }
+        
+        input, select { 
+            width: 100%; 
+            padding: 12px 16px; 
+            border: 1px solid var(--border-color); 
+            border-radius: 8px; 
+            font-family: inherit; 
+            font-size: 14px; 
+            box-sizing: border-box; 
+            outline: none; 
+            background: var(--input-bg); 
+            color: var(--text-main);
+            transition: all 0.15s ease; 
+        }
+        input:focus, select:focus { 
+            border-color: var(--accent-blue); 
+            background: #FFFFFF; 
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        
+        .row { display: flex; gap: 12px; }
+        .row > div { flex: 1; }
+
+        .segments { 
+            display: flex; 
+            background: var(--input-bg); 
+            padding: 3px; 
+            border-radius: 8px; 
+            border: 1px solid var(--border-color);
+        }
+        .seg { 
+            flex: 1; 
+            text-align: center; 
+            padding: 10px 4px; 
+            font-size: 12px; 
+            cursor: pointer; 
+            border-radius: 6px; 
+            color: var(--text-muted); 
+            font-weight: 500; 
+            transition: all 0.15s ease;
+            white-space: nowrap; 
+        }
+        .seg.active { 
+            background: #FFFFFF; 
+            color: var(--accent-primary); 
+            font-weight: 600;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+        }
+        
+        button { 
+            width: 100%; 
+            padding: 15px; 
+            border-radius: 8px; 
+            border: none; 
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: all 0.15s ease; 
+            font-family: 'Inter', sans-serif; 
+        }
+        .btn-main { 
+            background: var(--accent-blue); 
+            color: #FFFFFF; 
+            font-size: 15px; 
+            margin-top: 24px; 
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+        }
+        .btn-main:hover { background: #1D4ED8; }
+        
+        .btn-premium { 
+            background: var(--accent-primary); 
+            color: #FFFFFF; 
+            font-size: 14px; 
+        }
+        .btn-premium:hover { background: #1E293B; }
+
+        .btn-sub { 
+            background: transparent; 
+            border: 1px solid var(--border-color); 
+            color: var(--text-muted); 
+            margin-top: 12px; 
+            font-size: 12px; 
+        }
+        .btn-sub:hover { background: var(--input-bg); color: var(--text-main); }
+
+        .sheet { 
+            position: fixed; 
+            bottom: -100%; 
+            left: 0; 
+            right: 0; 
+            background: var(--bg-main); 
+            padding: 30px 24px 40px 24px; 
+            border-radius: 20px 20px 0 0; 
+            transition: bottom 0.35s cubic-bezier(0.16, 1, 0.3, 1); 
+            z-index: 1000; 
+            max-height: 85vh; 
+            overflow-y: auto; 
+            box-shadow: 0 -20px 25px -5px rgba(0, 0, 0, 0.1); 
+            border-top: 1px solid var(--border-color);
+        }
+        .sheet.active { bottom: 0; }
+        .overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.3); display: none; z-index: 999; backdrop-filter: blur(4px); }
+
+        .output-box { 
+            background: #FFFFFF; 
+            padding: 24px; 
+            border-radius: 10px; 
+            border: 1px solid var(--border-color); 
+            margin-bottom: 20px; 
+        }
+        .output-title { 
+            font-size: 14px; 
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 0; 
+            margin-bottom: 14px; 
+            color: var(--text-muted); 
+            border-bottom: 1px solid var(--border-color); 
+            padding-bottom: 10px; 
+        }
+        .content-text { 
+            font-size: 14px; 
+            line-height: 1.6; 
+            color: var(--text-main); 
+            white-space: pre-wrap; 
+        }
+
+        .action-btn { 
+            width: auto; 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 8px; 
+            padding: 10px 18px; 
+            border-radius: 6px; 
+            font-size: 13px; 
+            font-weight: 500; 
+            background: var(--input-bg); 
+            color: var(--text-main); 
+            margin-top: 16px; 
+            border: 1px solid var(--border-color);
+        }
+        .action-btn:hover { background: var(--border-color); }
+
+        /* MODAL */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); z-index: 2000; align-items: center; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: #FFFFFF; padding: 30px; border-radius: 12px; width: 90%; max-width: 500px; max-height: 75vh; position: relative; display: flex; flex-direction: column; border: 1px solid var(--border-color); }
+        .modal-scroll-area { overflow-y: auto; margin-top: 15px; line-height: 1.6; font-size: 13px; color: var(--text-muted); }
+        .close-button { position: absolute; top: 16px; right: 20px; font-size: 20px; cursor: pointer; color: var(--text-muted); }
+        .btn-close { padding: 10px 24px; background: var(--accent-primary); color: white; border: none; border-radius: 6px; cursor: pointer; align-self: center; margin-top: 20px; }
+        
+        .footer { margin-top: 35px; text-align: center; font-size: 11px; }
+        .footer a { color: var(--text-muted); text-decoration: none; margin: 0 10px; font-weight: 500; }
+        .footer a:hover { color: var(--accent-blue); }
+    </style>
+</head>
+<body>
+
+<div class="app">
+    <header>
+        <h1>AIES <span>IMMO Studio</span></h1>
+        <p>KI-Marketingplattform für Immobilienprofis</p>
+    </header>
+    
+    <div id="user-info" style="display: none; margin-bottom: 15px; font-size: 12px; color: var(--text-muted); text-align: center; font-weight: 500;">
+        <span id="display-email"></span> | <span id="user-credits"></span>
+    </div>
+
+    <div class="card">
+        <label>Immobilientyp</label>
+        <select id="object_type" onchange="localStorage.setItem('immo_type', this.value)">
+            <option value="Wohnung">Wohnung</option>
+            <option value="Haus">Haus</option>
+            <option value="Penthouse">Penthouse</option>
+            <option value="Gewerbeimmobilie">Gewerbeimmobilie</option>
+        </select>
+
+        <label>Standort</label>
+        <input type="text" id="location" placeholder="z.B. Berlin-Mitte, Hamburg..." oninput="localStorage.setItem('immo_loc', this.value)">
+
+        <div class="row">
+            <div>
+                <label>Zimmer</label>
+                <input type="number" id="rooms" step="0.5" placeholder="3.5" oninput="localStorage.setItem('immo_rooms', this.value)">
+            </div>
+            <div>
+                <label>Fläche (m²)</label>
+                <input type="number" id="size_sqm" placeholder="85" oninput="localStorage.setItem('immo_size', this.value)">
+            </div>
+        </div>
+
+        <label>Highlights / Key Features</label>
+        <input type="text" id="key_features" placeholder="z.B. Einbauküche, Balkon, Fußbodenheizung..." oninput="localStorage.setItem('immo_features', this.value)">
+
+        <label>Zielgruppe</label>
+        <div class="segments">
+            <div class="seg active" onclick="setV('target','Kapitalanleger',this)">💼 Investoren</div>
+            <div class="seg" onclick="setV('target','Familien',this)">👨‍👩‍👧 Familien</div>
+            <div class="seg" onclick="setV('target','Singles / Studenten',this)">🎓 Singles</div>
+        </div>
+       
+        <label>Marketing-Ton</label>
+        <div class="segments">
+            <div class="seg active" onclick="setV('tone','Professional',this)">Seriös</div>
+            <div class="seg" onclick="setV('tone','Luxury',this)">Premium</div>
+            <div class="seg" onclick="setV('tone','Emotional',this)">Warm</div>
+            <div class="seg" onclick="setV('tone','Witty',this)">Modern</div>
+        </div>
+
+        <button class="btn-main" id="go" onclick="brew()">Marketing-Paket generieren</button>
+    </div>
+
+    <footer class="footer">
+        <a href="javascript:void(0)" onclick="openModal('privacy')">Datenschutz</a>
+        <a href="javascript:void(0)" onclick="openModal('terms')">AGB</a>
+        <a href="javascript:void(0)" onclick="openModal('refund')">Widerruf</a>
+    </footer>
+</div>
+
+<div class="overlay" id="blur" onclick="toggleAll()"></div>
+
+<div class="sheet" id="resultSheet">
+    <div class="output-box">
+        <h3 class="output-title">📄 Professionelles Exposé</h3>
+        <div class="content-text" id="expose-text-container"></div>
+        <button class="action-btn" onclick="copyText('expose-text-container', this)">📋 Text kopieren</button>
+    </div>
+    
+    <div class="output-box">
+        <h3 class="output-title">🎬 60s Reels / Video Script</h3>
+        <div class="content-text" id="video-script-container"></div>
+        <button class="action-btn" onclick="copyText('video-script-container', this)">📋 Skript kopieren</button>
+    </div>
+    <button class="btn-sub" onclick="toggleSheet(false)" style="width:100%">Schließen</button>
+</div>
+
+<div class="sheet" id="priceSheet">
+    <h3 style="text-align:center; margin-top: 0; font-size: 1.3rem; font-weight: 700;">AIES Professional Lizenzen</h3>
+    <p style="text-align:center; font-size: 13px; margin-bottom: 25px; color: var(--text-muted);">Ihre Objekt-Credits sind aufgebraucht. Wählen Sie einen Zugang:</p>
+    <button class="btn-main" onclick="buy('monthly')" style="margin-bottom:12px; margin-top: 0;">€49 / Monat — 50 Objekt-Pakete</button>
+    <button class="btn-premium" onclick="buy('yearly')" style="width:100%;">€490 / Jahr — Flatrate (Unbegrenzt)</button>
+    <button class="btn-sub" onclick="togglePriceSheet(false)" style="width:100%; margin-top: 15px;">Abbrechen</button> 
+</div>
+
+<div id="legalModal" class="modal-overlay">
+    <div class="modal-content">
+        <span class="close-button" onclick="closeModal()">&times;</span>
+        <h2 id="modalTitle" style="margin: 0; font-size: 1.2rem; font-weight: 700;"></h2>
+        <div id="modalBody" class="modal-scroll-area"></div>
+        <button onclick="closeModal()" class="btn-close">Schließen</button>
+    </div>
+</div>
+
+<script>
+const _supabase = supabase.createClient('https://fhfxpwgqnwnlafekmmrm.supabase.co', 'sb_publishable_0pLQ3vw_4N55UL-XCiytmA_Jl0HkYEh');
+
+let state = { target: 'Kapitalanleger', tone: 'Professional' };
+
+const legalTexts = {
+    privacy: { title: "Datenschutzerklärung", content: "<p><strong>1. Datenerhebung:</strong> Wir speichern Ihre E-Mail-Adresse zur Verwaltung Ihres Kontos.</p><p><strong>2. Zahlungen:</strong> Abwicklungen erfolgen über Stripe. Kreditkartendaten werden nicht auf unseren Servern gespeichert.</p>" },
+    terms: { title: "Allgemeine Geschäftsbedingungen", content: "<p><strong>1. Leistung:</strong> IMMO Studio bietet KI-gestützte Marketing-Texte für Immobilienmakler.</p><p><strong>2. Abonnements:</strong> Lizenzen verlängern sich automatisch und sind jederzeit kündbar.</p>" },
+    refund: { title: "Widerrufsbelehrung", content: "<p>Da es sich um digitale, sofort generierte Inhalte handelt, erlischt das Widerrufsrecht, sobald die ersten Credits verbraucht wurden.</p>" }
+};
+
+function openModal(type) {
+    document.getElementById('modalTitle').innerText = legalTexts[type].title;
+    document.getElementById('modalBody').innerHTML = legalTexts[type].content;
+    document.getElementById('legalModal').classList.add('active');
+}
+function closeModal() { document.getElementById('legalModal').classList.remove('active'); }
+
+async function brew() {
+    const { data: { user } } = await _supabase.auth.getUser();
+    if (!user) {
+        localStorage.setItem('auto_brew', 'true');
+        return loginWithGoogle();
+    }
+    executeGeneration(user.email);
+}
+
+async function loginWithGoogle() {
+    await _supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin } });
+}
+
+async function executeGeneration(email) {
+    const btn = document.getElementById('go');
+    const originalText = btn.innerText;
+    btn.innerText = "Generiere Unterlagen...";
+    btn.disabled = true;
+
+    try {
+        const res = await fetch('/generate', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                email: email,
+                object_type: document.getElementById('object_type').value,
+                location: document.getElementById('location').value,
+                rooms: parseFloat(document.getElementById('rooms').value) || 1,
+                size_sqm: parseInt(document.getElementById('size_sqm').value) || 50,
+                key_features: document.getElementById('key_features').value,
+                target_audience: state.target,
+                marketing_tone: state.tone
+            })
+        });
+        const data = await res.json();
+        if (data.error === "credits_depleted") return togglePriceSheet(true);
+        if (data.error) return alert(data.error);
+
+        document.getElementById('expose-text-container').innerText = data.expose_text;
+        document.getElementById('video-script-container').innerText = data.video_script;
+        
+        toggleSheet(true);
+        updateUI();
+    } catch (e) {
+        alert("Verbindungsfehler zum Server");
+    } finally {
+        btn.innerText = originalText;
+        btn.disabled = false;
+    }
+}
+
+function copyText(id, btn) {
+    navigator.clipboard.writeText(document.getElementById(id).innerText).then(() => {
+        const old = btn.innerText; btn.innerText = "Kopiert! ✔"; setTimeout(() => btn.innerText = old, 2000);
+    });
+}
+
+function toggleSheet(show) {
+    document.getElementById('resultSheet').classList.toggle('active', show);
+    document.getElementById('blur').style.display = show ? 'block' : 'none';
+}
+function togglePriceSheet(show) {
+    document.getElementById('priceSheet').classList.toggle('active', show);
+    document.getElementById('blur').style.display = show ? 'block' : 'none';
+}
+function toggleAll() { toggleSheet(false); togglePriceSheet(false); closeModal(); }
+
+function setV(k, v, el) {
+    state[k] = v;
+    el.parentElement.querySelectorAll('.seg').forEach(x => x.classList.remove('active'));
+    el.classList.add('active');
+}
+
+async function updateUI() {
+    const { data: { user } } = await _supabase.auth.getUser();
+    if (user) {
+        const res = await fetch(`/get-credits?email=${user.email}`);
+        const data = await res.json();
+        document.getElementById('user-info').style.display = 'block';
+        document.getElementById('display-email').innerText = user.email.split('@')[0];
+        document.getElementById('user-credits').innerText = data.credits + ' Objekt-Credits';
+    }
+}
+
+async function buy(plan) {
+    const { data: { user } } = await _supabase.auth.getUser();
+    if (!user) return loginWithGoogle();
+    const res = await fetch('/create-checkout-session', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ email: user.email, plan: plan })
+    });
+    const session = await res.json();
+    if (session.url) window.location.href = session.url;
+}
+
+window.onload = () => {
+    if(localStorage.getItem('immo_type')) document.getElementById('object_type').value = localStorage.getItem('immo_type');
+    document.getElementById('location').value = localStorage.getItem('immo_loc') || '';
+    document.getElementById('rooms').value = localStorage.getItem('immo_rooms') || '';
+    document.getElementById('size_sqm').value = localStorage.getItem('immo_size') || '';
+    document.getElementById('key_features').value = localStorage.getItem('immo_features') || '';
+    updateUI();
+};
+</script>
+</body>
+</html>
